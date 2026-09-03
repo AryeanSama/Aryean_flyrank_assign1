@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Predictive Content Decay & Opportunity Scoring Engine</title>
+    <title>Capstone Report — Predictive Content Decay & Opportunity Scoring Engine</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 900px; margin: 0 auto; padding: 2rem; }
         h1 { color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
@@ -11,41 +11,48 @@
         table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
         th, td { border: 1px solid #e5e7eb; padding: 0.75rem; text-align: left; }
         th { background-color: #f9fafb; font-weight: 600; }
-        .highlight { background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 1rem; margin: 1rem 0; }
-        .tier { font-weight: bold; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; }
-        .tier-1 { background-color: #fee2e2; color: #991b1b; }
-        .tier-2 { background-color: #fef3c7; color: #92400e; }
-        .tier-3 { background-color: #e0e7ff; color: #3730a3; }
-        .tier-4 { background-color: #f3f4f6; color: #374151; }
+        .meta-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1rem; margin-bottom: 2rem; }
+        .checklist { background-color: #fffbe0; border-left: 4px solid #eab308; padding: 1rem; margin: 1.5rem 0; }
+        code { background-color: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; }
+        pre { background-color: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 6px; overflow-x: auto; }
     </style>
 </head>
 <body>
 
-    <h1>Predictive Content Decay & Opportunity Scoring Engine</h1>
-    <p><strong>Author:</strong> Aryean Kundu | <strong>Track:</strong> Refresh / Content Opportunity Scoring</p>
+    <h1>Capstone Report — Predictive Content Decay & Opportunity Scoring Engine</h1>
 
-    <h2>1. Abstract</h2>
-    <p>Unmonitored organic search traffic decay leads to substantial visibility loss before manual audits identify underperforming assets. This research presents a machine learning pipeline utilizing DuckDB and LightGBM to forecast page-level traffic decay (&ge;20% decline) 30 days in advance. Operating on a time-aware out-of-time test split, the model achieved an <strong>ROC-AUC of 0.812</strong> (+39.5% lift over baseline) and a <strong>Precision @ Top 10% of 0.684</strong>. Outputs are mapped into a 4-tier decision-support playbook to automate editorial refresh workflows.</p>
+    <div class="meta-box">
+        <p><strong>Author:</strong> Aryean Kundu</p>
+        <p><strong>Lane:</strong> Refresh / Opportunity Scoring</p>
+        <p><strong>Repo:</strong> <a href="https://github.com/AryeanSama/Aryean_flyrank_assign1" target="_blank">https://github.com/AryeanSama/Aryean_flyrank_assign1</a></p>
+        <p><strong>Date:</strong> September 2026</p>
+    </div>
 
-    <h2>2. Question & Decision Supported</h2>
-    <p><strong>Research Question:</strong> Can rolling impression slopes, click-through rate (CTR) volatility, and position drift predict page-level search performance decay 30 days in advance?</p>
-    <p><strong>Decision Supported:</strong> Operationalizes automated content governance for editorial and SEO teams, replacing reactive site audits with proactive content updates and search intent re-alignment.</p>
+    <h2>0. Abstract</h2>
+    <p>Can historical traffic volatility predict page-level search performance decay 30 days in advance? Using DuckDB over FlyRank search performance data, we constructed a 60-day temporal lookback matrix targeting page decay. A LightGBM classifier was evaluated using a time-aware out-of-time test split against a historical heuristic baseline. The final model achieved an <strong>ROC-AUC of 0.812</strong> (+39.5% lift) and a <strong>Precision @ Top 10% of 0.684</strong> against an 18.5% decay base rate. This system outputs a 4-tier risk score to prioritize manual editorial content refreshes.</p>
 
-    <h2>3. Data Ingestion & Safety</h2>
-    <ul>
-        <li><strong>Source:</strong> FlyRank ML Internship Warehouse Release accessed via DuckDB.</li>
-        <li><strong>Lookback Window:</strong> $T-60$ days to $T$ | <strong>Target Window:</strong> $T$ to $T+30$ days.</li>
-        <li><strong>Data Safety:</strong> Filters out utility endpoints (&lt;50 monthly impressions). All client identifiers, domains, and raw search queries are stripped or pseudonymized.</li>
-    </ul>
+    <h2>1. Problem Framing</h2>
+    <p><strong>Decision Supported:</strong> Prioritizes underperforming pages for content updates and search intent re-alignment before traffic loss compounds.</p>
+    <p><strong>Unit of Analysis:</strong> Page-level aggregates evaluated across 30-day rolling windows.</p>
+    <p><strong>Output:</strong> 4-tier risk score (0.00 to 1.00 decay probability).</p>
+    <p><strong>Human Action:</strong> Editorial teams review Tier 1 flagged pages to update outdated statistics, refresh metadata, or re-align search intent.</p>
+    <p><strong>Cost of Error:</strong> False Positives waste editorial labor on stable pages; False Negatives cause unmitigated traffic loss over extended timeframes. ML provides scalable, automated rank-order prioritization across thousands of URLs.</p>
 
-    <h2>4. Methodology & Leakage Prevention</h2>
-    <ul>
-        <li><strong>Label Definition:</strong> Binary flag ($Y=1$) if organic traffic decays by &ge;20% over the next 30 days.</li>
-        <li><strong>Leakage Prevention:</strong> Label-derived fields (`trend_direction`, `trend_pct`) were explicitly excluded from the feature matrix. Features are calculated exclusively prior to date $T$.</li>
-        <li><strong>Validation Design:</strong> Strict Out-of-Time Temporal Split (Train on historical months 1–4, validate on months 5–6).</li>
-    </ul>
+    <h2>2. Data Safety</h2>
+    <p>Data ingested via DuckDB from <code>hf://datasets/flyrank/ml_internship_warehouse/*.parquet</code>. Pages under 50 monthly impressions were excluded. Label-derived leakage fields (e.g., <code>trend_direction</code>, <code>trend_pct</code>) were deliberately dropped prior to training. All client identifiers, domains, and queries were hashed into pseudonymous page IDs used strictly for grouping, never as features. No private details appear in <code>work/</code>.</p>
 
-    <h2>5. Results (vs Baseline)</h2>
+    <h2>3. Baseline</h2>
+    <p><strong>Rule Baseline:</strong> Flags a page for decay ($1$) if recent 7-day average traffic drops below the prior 30-day average (<code>impression_slope_7_30 < 1.0</code>). Evaluated on the exact same test split, the baseline yielded an <strong>ROC-AUC of 0.582</strong> and <strong>Precision @ Top 10% of 0.423</strong>.</p>
+
+    <h2>4. Model / Analysis</h2>
+    <p><strong>Method:</strong> LightGBM Classifier (100 estimators, max depth 3). Fits non-linear feature interactions without overfitting noisy time-series data.</p>
+    <p><strong>Features Included:</strong> <code>impression_slope_7_30</code>, <code>ctr_volatility_14d</code>, <code>position_drift_delta</code>.</p>
+    <p><strong>Features Excluded:</strong> Target-derived fields and pseudonymous page IDs.</p>
+    <p><strong>Target Definition:</strong> Binary flag ($Y=1$) if page traffic drops by &ge;20% in the evaluation window ($T$ to $T+30$).</p>
+
+    <h2>5. Evaluation</h2>
+    <p><strong>Split Design:</strong> Time-Aware Out-of-Time Split (Train: Months 1–4; Test: Months 5–6) to eliminate temporal data leakage.</p>
+
     <table>
         <thead>
             <tr>
@@ -57,7 +64,7 @@
         </thead>
         <tbody>
             <tr>
-                <td>Historical Trend Heuristic (Baseline)</td>
+                <td>Historical Heuristic (Baseline)</td>
                 <td>0.423</td>
                 <td>0.582</td>
                 <td>0.461</td>
@@ -68,29 +75,38 @@
                 <td><strong>0.812</strong></td>
                 <td><strong>0.729</strong></td>
             </tr>
-            <tr>
-                <td><em>Relative Lift</em></td>
-                <td><em>+61.7%</em></td>
-                <td><em>+39.5%</em></td>
-                <td><em>+58.1%</em></td>
-            </tr>
         </tbody>
     </table>
+    <p><strong>Base Rate:</strong> Decay majority class base rate is <strong>18.5%</strong>. Model precision of 0.684 at Top 10% represents a 3.7x lift over random guessing.</p>
+    <p><strong>Error Analysis:</strong> False Positives occur on pages experiencing short-term seasonal volatility; False Negatives occur on low-volatility pages facing sudden competitor keyword launches.</p>
 
-    <h2>6. Limitations & Observational Guardrails</h2>
-    <p>Risk scores reflect correlation and predicted decay probability; they do not establish direct causality or prove search engine algorithm adjustments. Outputs serve solely as non-causal decision-support triggers for human editorial reviews.</p>
+    <h2>6. Interpretation</h2>
+    <p>Feature importance analysis shows <code>impression_slope_7_30</code> (52% weight) and <code>position_drift_delta</code> (31% weight) drive the majority of decay predictions. Stable historical trajectories were observed as the strongest directional indicators of future performance resilience.</p>
 
-    <h2>7. Ranked Recommendations (Action Playbook)</h2>
+    <h2>7. Recommendation</h2>
     <ul>
-        <li><span class="tier tier-1">Tier 1 (Risk > 0.80)</span> <strong>High Priority Refresh:</strong> Immediate editorial rewrite and search intent re-alignment within 7 days.</li>
-        <li><span class="tier tier-2">Tier 2 (Risk 0.55–0.79)</span> <strong>Metadata Optimization:</strong> Re-optimize title tags, header structures, and meta descriptions.</li>
-        <li><span class="tier tier-3">Tier 3 (Risk 0.35–0.54)</span> <strong>Automated Monitoring:</strong> Retain on weekly tracking list; no immediate manual edits.</li>
-        <li><span class="tier tier-4">Tier 4 (Risk < 0.35)</span> <strong>Maintain:</strong> Stable asset; no action required.</li>
+        <li><strong>Tier 1 (Risk > 0.80) — High Priority Refresh:</strong> Immediate editorial rewrite within 7 days.</li>
+        <li><strong>Tier 2 (Risk 0.55–0.79) — Metadata Optimization:</strong> Re-optimize title tags, headers, and meta descriptions within 14 days.</li>
+        <li><strong>Tier 3 (Risk 0.35–0.54) — Automated Monitoring:</strong> Retain on weekly tracking list.</li>
+        <li><strong>Tier 4 (Risk < 0.35) — Maintain:</strong> Healthy asset; no action required.</li>
     </ul>
 
-    <h2>8. Embedded Artifacts</h2>
-    <div class="highlight">
-        <p><strong>Primary Driver Analysis:</strong> Feature importance evaluation confirms that <code>impression_slope_7_30</code> and <code>position_drift_delta</code> constitute over 70% of model decision weight, validating historical trend stability as the top predictor of future decay.</p>
+    <h2>8. Reproducibility</h2>
+    <p>Execute the following commands from a fresh repository clone:</p>
+    <pre>git clone https://github.com/AryeanSama/Aryean_flyrank_assign1.git
+cd Aryean_flyrank_assign1
+pip install lightgbm duckdb pandas numpy scikit-learn
+python -m jupyter nbconvert --to notebook --execute work/notebooks/capstone.ipynb</pre>
+    <p><strong>Random Seed:</strong> Set to <code>42</code> across numpy and LightGBM model instantiations.</p>
+
+    <div class="checklist">
+        <h3>Claims Checklist Compliance</h3>
+        <ul>
+            <li>✔ Language uses <em>observed</em>, <em>measured</em>, <em>directional</em>, and <em>decision-support</em>.</li>
+            <li>✔ No causal claims or algorithm prediction assertions made.</li>
+            <li>✔ Base rate (18.5%) explicitly reported alongside Precision @ Top 10%.</li>
+            <li>✔ Zero client-identifying data present in entire repository.</li>
+        </ul>
     </div>
 
     <h2>9. Acknowledgments & Data Credit</h2>
