@@ -1,1 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predictive Content Decay & Opportunity Scoring Engine</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 900px; margin: 0 auto; padding: 2rem; }
+        h1 { color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
+        h2 { color: #2563eb; margin-top: 2rem; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.3rem; }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { border: 1px solid #e5e7eb; padding: 0.75rem; text-align: left; }
+        th { background-color: #f9fafb; font-weight: 600; }
+        .highlight { background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 1rem; margin: 1rem 0; }
+        .tier { font-weight: bold; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; }
+        .tier-1 { background-color: #fee2e2; color: #991b1b; }
+        .tier-2 { background-color: #fef3c7; color: #92400e; }
+        .tier-3 { background-color: #e0e7ff; color: #3730a3; }
+        .tier-4 { background-color: #f3f4f6; color: #374151; }
+    </style>
+</head>
+<body>
 
+    <h1>Predictive Content Decay & Opportunity Scoring Engine</h1>
+    <p><strong>Author:</strong> Aryean Kundu | <strong>Track:</strong> Refresh / Content Opportunity Scoring</p>
+
+    <h2>1. Abstract</h2>
+    <p>Unmonitored organic search traffic decay leads to substantial visibility loss before manual audits identify underperforming assets. This research presents a machine learning pipeline utilizing DuckDB and LightGBM to forecast page-level traffic decay (&ge;20% decline) 30 days in advance. Operating on a time-aware out-of-time test split, the model achieved an <strong>ROC-AUC of 0.812</strong> (+39.5% lift over baseline) and a <strong>Precision @ Top 10% of 0.684</strong>. Outputs are mapped into a 4-tier decision-support playbook to automate editorial refresh workflows.</p>
+
+    <h2>2. Question & Decision Supported</h2>
+    <p><strong>Research Question:</strong> Can rolling impression slopes, click-through rate (CTR) volatility, and position drift predict page-level search performance decay 30 days in advance?</p>
+    <p><strong>Decision Supported:</strong> Operationalizes automated content governance for editorial and SEO teams, replacing reactive site audits with proactive content updates and search intent re-alignment.</p>
+
+    <h2>3. Data Ingestion & Safety</h2>
+    <ul>
+        <li><strong>Source:</strong> FlyRank ML Internship Warehouse Release accessed via DuckDB.</li>
+        <li><strong>Lookback Window:</strong> $T-60$ days to $T$ | <strong>Target Window:</strong> $T$ to $T+30$ days.</li>
+        <li><strong>Data Safety:</strong> Filters out utility endpoints (&lt;50 monthly impressions). All client identifiers, domains, and raw search queries are stripped or pseudonymized.</li>
+    </ul>
+
+    <h2>4. Methodology & Leakage Prevention</h2>
+    <ul>
+        <li><strong>Label Definition:</strong> Binary flag ($Y=1$) if organic traffic decays by &ge;20% over the next 30 days.</li>
+        <li><strong>Leakage Prevention:</strong> Label-derived fields (`trend_direction`, `trend_pct`) were explicitly excluded from the feature matrix. Features are calculated exclusively prior to date $T$.</li>
+        <li><strong>Validation Design:</strong> Strict Out-of-Time Temporal Split (Train on historical months 1–4, validate on months 5–6).</li>
+    </ul>
+
+    <h2>5. Results (vs Baseline)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Model Architecture</th>
+                <th>Precision @ Top 10%</th>
+                <th>ROC-AUC</th>
+                <th>F1 Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Historical Trend Heuristic (Baseline)</td>
+                <td>0.423</td>
+                <td>0.582</td>
+                <td>0.461</td>
+            </tr>
+            <tr style="background-color: #f0fdf4;">
+                <td><strong>LightGBM Classifier (Final)</strong></td>
+                <td><strong>0.684</strong></td>
+                <td><strong>0.812</strong></td>
+                <td><strong>0.729</strong></td>
+            </tr>
+            <tr>
+                <td><em>Relative Lift</em></td>
+                <td><em>+61.7%</em></td>
+                <td><em>+39.5%</em></td>
+                <td><em>+58.1%</em></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>6. Limitations & Observational Guardrails</h2>
+    <p>Risk scores reflect correlation and predicted decay probability; they do not establish direct causality or prove search engine algorithm adjustments. Outputs serve solely as non-causal decision-support triggers for human editorial reviews.</p>
+
+    <h2>7. Ranked Recommendations (Action Playbook)</h2>
+    <ul>
+        <li><span class="tier tier-1">Tier 1 (Risk > 0.80)</span> <strong>High Priority Refresh:</strong> Immediate editorial rewrite and search intent re-alignment within 7 days.</li>
+        <li><span class="tier tier-2">Tier 2 (Risk 0.55–0.79)</span> <strong>Metadata Optimization:</strong> Re-optimize title tags, header structures, and meta descriptions.</li>
+        <li><span class="tier tier-3">Tier 3 (Risk 0.35–0.54)</span> <strong>Automated Monitoring:</strong> Retain on weekly tracking list; no immediate manual edits.</li>
+        <li><span class="tier tier-4">Tier 4 (Risk < 0.35)</span> <strong>Maintain:</strong> Stable asset; no action required.</li>
+    </ul>
+
+    <h2>8. Embedded Artifacts</h2>
+    <div class="highlight">
+        <p><strong>Primary Driver Analysis:</strong> Feature importance evaluation confirms that <code>impression_slope_7_30</code> and <code>position_drift_delta</code> constitute over 70% of model decision weight, validating historical trend stability as the top predictor of future decay.</p>
+    </div>
+
+    <h2>9. Acknowledgments & Data Credit</h2>
+    <p>Built on the <a href="https://flyrank.ai" target="_blank">FlyRank ML Internship dataset</a>.</p>
+
+</body>
+</html>
