@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Capstone Report — Predictive Content Decay Engine</title>
+    <!-- Chart.js for Interactive Metrics Graphic -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --card-border: #334155;
+            --bg-color: #0b0f19;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
             --accent-blue: #38bdf8;
             --accent-green: #22c55e;
             --accent-amber: #f59e0b;
@@ -21,7 +23,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             line-height: 1.7;
             color: var(--text-main);
-            background-color: var(--bg-color);
+            background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, var(--bg-color) 70%);
             max-width: 960px;
             margin: 0 auto;
             padding: 2.5rem 1.5rem;
@@ -47,9 +49,10 @@
             gap: 0.5rem;
         }
 
-        /* Hero / Meta Card */
+        /* Glassmorphism Meta Card */
         .meta-card {
             background: var(--card-bg);
+            backdrop-filter: blur(12px);
             border: 1px solid var(--card-border);
             border-radius: 12px;
             padding: 1.5rem;
@@ -57,7 +60,7 @@
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
         }
 
         .meta-item { display: flex; flex-direction: column; }
@@ -75,11 +78,18 @@
         }
 
         .metric-card {
-            background: linear-gradient(145deg, #1e293b, #0f172a);
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
             border: 1px solid var(--card-border);
             border-radius: 10px;
             padding: 1.25rem;
             text-align: center;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-blue);
         }
 
         .metric-value {
@@ -90,6 +100,16 @@
         }
 
         .metric-sub { font-size: 0.85rem; color: var(--text-muted); }
+
+        /* Chart Container */
+        .chart-box {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
 
         /* Styled Table */
         .table-container { overflow-x: auto; margin: 1.5rem 0; }
@@ -146,7 +166,7 @@
 </head>
 <body>
 
-    <h1>Capstone Report — Predictive Content Decay & Opportunity Scoring Engine</h1>
+    <h1>Capstone Report — Predictive Content Decay Engine</h1>
 
     <div class="meta-card">
         <div class="meta-item">
@@ -167,10 +187,10 @@
         </div>
     </div>
 
-    <h2>Abstract</h2>
+    <h2>Executive Summary</h2>
     <p>Can historical traffic volatility predict page-level search performance decay 30 days in advance? Using DuckDB over FlyRank search performance data, we constructed a 60-day temporal lookback matrix targeting page decay. A LightGBM classifier was evaluated using a time-aware out-of-time test split against a historical heuristic baseline. The final model achieved an <strong>ROC-AUC of 0.812</strong> (+39.5% lift) and a <strong>Precision @ Top 10% of 0.684</strong> against an 18.5% decay base rate.</p>
 
-    <!-- Visual Key Metrics Callout -->
+    <!-- Key Metrics Callout -->
     <div class="metrics-grid">
         <div class="metric-card">
             <div class="meta-label">Model ROC-AUC</div>
@@ -189,26 +209,31 @@
         </div>
     </div>
 
-    <h2>1. Problem Framing</h2>
+    <h2>Problem Framing</h2>
     <p><strong>Decision Supported:</strong> Prioritizes underperforming pages for content updates and search intent re-alignment before traffic loss compounds.</p>
     <p><strong>Unit of Analysis:</strong> Page-level aggregates evaluated across 30-day rolling windows.</p>
     <p><strong>Output:</strong> 4-tier risk score (0.00 to 1.00 decay probability).</p>
     <p><strong>Human Action:</strong> Editorial teams review Tier 1 flagged pages to update outdated statistics, refresh metadata, or re-align search intent.</p>
     <p><strong>Cost of Error:</strong> False Positives waste editorial labor on stable pages; False Negatives cause unmitigated traffic loss over extended timeframes.</p>
 
-    <h2>2. Data Safety</h2>
+    <h2>Data Safety & Governance</h2>
     <p>Data ingested via DuckDB from <code>hf://datasets/flyrank/ml_internship_warehouse/*.parquet</code>. Pages under 50 monthly impressions were excluded. Label-derived leakage fields (e.g., <code>trend_direction</code>, <code>trend_pct</code>) were deliberately dropped prior to training. All client identifiers were hashed into pseudonymous page IDs used strictly for grouping.</p>
 
-    <h2>3. Baseline</h2>
+    <h2>Baseline Comparison</h2>
     <p><strong>Rule Baseline:</strong> Flags a page for decay (1) if recent 7-day average traffic drops below the prior 30-day average (<code>impression_slope_7_30 &lt; 1.0</code>). Evaluated on the exact same test split, yielding an <strong>ROC-AUC of 0.582</strong> and <strong>Precision @ Top 10% of 0.423</strong>.</p>
 
-    <h2>4. Model / Analysis</h2>
+    <h2>Model Architecture</h2>
     <p><strong>Method:</strong> LightGBM Classifier (100 estimators, max depth 3). Fits non-linear feature interactions without overfitting noisy time-series data.</p>
-    <p><strong>Features Included:</strong> <code>impression_slope_7_30</code>, <code>ctr_volatility_14d</code>, <code>position_drift_delta</code>.</p>
+    <p><strong>Features Included:</strong> <code>impression_slope_7_30</code>, <code>ctr_volatility_14d</code>, 長<code>position_drift_delta</code>.</p>
     <p><strong>Target Definition:</strong> Binary flag ($Y=1$) if page traffic drops by &ge;20% in the evaluation window ($T$ to $T+30$).</p>
 
-    <h2>5. Evaluation</h2>
+    <h2>Evaluation & Performance</h2>
     <p><strong>Split Design:</strong> Time-Aware Out-of-Time Split (Train: Months 1–4; Test: Months 5–6) to eliminate temporal data leakage.</p>
+
+    <!-- Interactive Graphic Comparison Chart -->
+    <div class="chart-box">
+        <canvas id="performanceChart" style="max-height: 280px;"></canvas>
+    </div>
 
     <div class="table-container">
         <table>
@@ -237,16 +262,16 @@
         </table>
     </div>
 
-    <h2>6. Interpretation</h2>
+    <h2>Feature Interpretation</h2>
     <p>Feature importance analysis shows <code>impression_slope_7_30</code> (52% weight) and <code>position_drift_delta</code> (31% weight) drive the majority of decay predictions.</p>
 
-    <h2>7. Recommendation</h2>
+    <h2>Action Playbook & Recommendations</h2>
     <p><span class="badge badge-tier1">Tier 1</span> <strong>Risk > 0.80 — High Priority Refresh:</strong> Immediate editorial rewrite within 7 days.</p>
     <p><span class="badge badge-tier2">Tier 2</span> <strong>Risk 0.55–0.79 — Metadata Optimization:</strong> Re-optimize title tags, headers, and meta descriptions within 14 days.</p>
     <p><span class="badge badge-tier3">Tier 3</span> <strong>Risk 0.35–0.54 — Automated Monitoring:</strong> Retain on weekly tracking list.</p>
     <p><span class="badge badge-tier4">Tier 4</span> <strong>Risk < 0.35 — Maintain:</strong> Healthy asset; no action required.</p>
 
-    <h2>8. Reproducibility</h2>
+    <h2>Reproducibility</h2>
     <pre>git clone https://github.com/AryeanSama/Aryean_flyrank_assign1.git
 cd Aryean_flyrank_assign1
 pip install lightgbm duckdb pandas numpy scikit-learn
@@ -262,8 +287,44 @@ python -m jupyter nbconvert --to notebook --execute work/notebooks/capstone.ipyn
         </ul>
     </div>
 
-    <h2>9. Acknowledgments & Data Credit</h2>
+    <h2>Acknowledgments & Data Credit</h2>
     <p>Built on the <a href="https://flyrank.ai" target="_blank">FlyRank ML Internship dataset</a>.</p>
 
+    <!-- Chart Execution Script -->
+    <script>
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Precision @ Top 10%', 'ROC-AUC', 'F1 Score'],
+                datasets: [
+                    {
+                        label: 'Historical Baseline',
+                        data: [0.423, 0.582, 0.461],
+                        backgroundColor: '#334155',
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'LightGBM Classifier',
+                        data: [0.684, 0.812, 0.729],
+                        backgroundColor: '#38bdf8',
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#f8fafc', font: { family: 'sans-serif' } } },
+                    title: { display: true, text: 'Model vs Baseline Performance Lift', color: '#38bdf8', font: { size: 14, weight: 'bold' } }
+                },
+                scales: {
+                    y: { beginAtZero: true, max: 1.0, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
