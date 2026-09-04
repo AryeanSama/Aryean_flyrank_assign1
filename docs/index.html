@@ -28,7 +28,7 @@
         <p><strong>Date:</strong> September 2026</p>
     </div>
 
-    <h2>0. Abstract</h2>
+    <h2>Abstract</h2>
     <p>Can historical traffic volatility predict page-level search performance decay 30 days in advance? Using DuckDB over FlyRank search performance data, we constructed a 60-day temporal lookback matrix targeting page decay. A LightGBM classifier was evaluated using a time-aware out-of-time test split against a historical heuristic baseline. The final model achieved an <strong>ROC-AUC of 0.812</strong> (+39.5% lift) and a <strong>Precision @ Top 10% of 0.684</strong> against an 18.5% decay base rate. This system outputs a 4-tier risk score to prioritize manual editorial content refreshes.</p>
 
     <h2>1. Problem Framing</h2>
@@ -42,7 +42,7 @@
     <p>Data ingested via DuckDB from <code>hf://datasets/flyrank/ml_internship_warehouse/*.parquet</code>. Pages under 50 monthly impressions were excluded. Label-derived leakage fields (e.g., <code>trend_direction</code>, <code>trend_pct</code>) were deliberately dropped prior to training. All client identifiers, domains, and queries were hashed into pseudonymous page IDs used strictly for grouping, never as features. No private details appear in <code>work/</code>.</p>
 
     <h2>3. Baseline</h2>
-    <p><strong>Rule Baseline:</strong> Flags a page for decay ($1$) if recent 7-day average traffic drops below the prior 30-day average (<code>impression_slope_7_30 < 1.0</code>). Evaluated on the exact same test split, the baseline yielded an <strong>ROC-AUC of 0.582</strong> and <strong>Precision @ Top 10% of 0.423</strong>.</p>
+    <p><strong>Rule Baseline:</strong> Flags a page for decay ($1$) if recent 7-day average traffic drops below the prior 30-day average (<code>impression_slope_7_30 &lt; 1.0</code>). Evaluated on the exact same test split, the baseline yielded an <strong>ROC-AUC of 0.582</strong> and <strong>Precision @ Top 10% of 0.423</strong>.</p>
 
     <h2>4. Model / Analysis</h2>
     <p><strong>Method:</strong> LightGBM Classifier (100 estimators, max depth 3). Fits non-linear feature interactions without overfitting noisy time-series data.</p>
@@ -85,10 +85,10 @@
 
     <h2>7. Recommendation</h2>
     <ul>
-        <li><strong>Tier 1 (Risk > 0.80) — High Priority Refresh:</strong> Immediate editorial rewrite within 7 days.</li>
+        <li><strong>Tier 1 (Risk &gt; 0.80) — High Priority Refresh:</strong> Immediate editorial rewrite within 7 days.</li>
         <li><strong>Tier 2 (Risk 0.55–0.79) — Metadata Optimization:</strong> Re-optimize title tags, headers, and meta descriptions within 14 days.</li>
         <li><strong>Tier 3 (Risk 0.35–0.54) — Automated Monitoring:</strong> Retain on weekly tracking list.</li>
-        <li><strong>Tier 4 (Risk < 0.35) — Maintain:</strong> Healthy asset; no action required.</li>
+        <li><strong>Tier 4 (Risk &lt; 0.35) — Maintain:</strong> Healthy asset; no action required.</li>
     </ul>
 
     <h2>8. Reproducibility</h2>
